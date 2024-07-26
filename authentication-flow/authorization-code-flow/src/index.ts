@@ -10,13 +10,32 @@ app.get("/login", (req, res) => {
     scope: "openid",
   });
 
-  const url = `http://localhost:8080/realms/poc-demo/protocol/openid-connect/auth?${loginParams.toString()}`;
+  const url = `http://keycloak:8080/realms/poc-demo/protocol/openid-connect/auth?${loginParams.toString()}`;
   res.redirect(url);
 });
 
-app.get("/auth-callback", (req, res) => {
-  const url = `http://172.17.0.1:8080/realms/poc-demo/protocol/openid-connect/auth`;
-  res.send("callback auth");
+app.get("/auth-callback", async (req, res) => {
+  const bodyParams = new URLSearchParams({
+    client_id: "node-client",
+    grant_type: "authorization_code",
+    code: req.query.code as string,
+    redirect_uri: "http://localhost:3001/auth-callback",
+  });
+
+  const url = `http://host.docker.internal:8080/realms/poc-demo/protocol/openid-connect/auth`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: bodyParams.toString()
+  });
+
+  const result =await response.json();
+  console.log(result);
+  
+  res.send(result);
 });
 
 app.listen(3001, () => {
